@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: master-redis
+  namespace: "{{ .Values.redis.namespace }}"
+spec:
+  serviceName: master-redis
+  replicas: {{ .Values.redis.master.replicaCount}}
+  selector:
+    matchLabels:
+      app: redis
+      type: master
+  template:
+    metadata:
+      labels:
+        app: redis
+        type: master
+    spec:
+      initContainers:
+      - name: config
+        image: {{ .Values.redis.image.name }}
+        command: [ "sh", "-c" ]
+        args:
+          - |
+            cp /tmp/redis/redis.conf /etc/redis/redis.conf
+        volumeMounts:
+        - name: redis-config
+          mountPath: /etc/redis/
+        - name: config
+          mountPath: /tmp/redis/
+      containers:
+      - name: redis
+        image: {{ .Values.redis.image.name }}
+        command: ["redis-server"]
+        args: ["/etc/redis/redis.conf"]
+        ports:
+        - containerPort: 6379
+          name: redis
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        - name: redis-config
+          mountPath: /etc/redis/
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: sharedservices
+      - name: redis-config
+        emptyDir: {}
+      - name: config
+        configMap:
+          name: redis-config
+      
+      

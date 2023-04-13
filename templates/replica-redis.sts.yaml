@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: replica-redis
+  namespace: "{{ .Values.redis.namespace }}"
+spec:
+  serviceName: replica-redis
+  replicas: {{ .Values.redis.replica.replicaCount}}
+  selector:
+    matchLabels:
+      app: redis
+      type: replica
+  template:
+    metadata:
+      labels:
+        app: redis
+        type: replica
+    spec:
+      initContainers:
+      - name: config
+        image: {{ .Values.redis.image.name }}
+        command: [ "sh", "-c" ]
+        args:
+          - |
+            cp /tmp/redis/redis.conf /etc/redis/redis.conf
+            MASTER_FDQN=master-redis.25844.svc.cluster.local
+            echo "updating redis.conf..."
+            echo "slaveof $MASTER_FDQN 6379" >> /etc/redis/redis.conf
+        volumeMounts:
+        - name: redis-config
+          mountPath: /etc/redis/
+        - name: config
+          mountPath: /tmp/redis/
+      containers:
+      - name: redis
+        image: {{ .Values.redis.image.name }}
+        command: ["redis-server"]
+        args: ["/etc/redis/redis.conf"]
+        ports:
+        - containerPort: 6379
+          name: redis
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        - name: redis-config
+          mountPath: /etc/redis/
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: sharedservices
+      - name: redis-config
+        emptyDir: {}
+      - name: config
+        configMap:
+          name: redis-config
+      
+      

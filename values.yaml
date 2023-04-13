@@ -1,0 +1,12 @@
+---
+redis:
+  master:
+    replicaCount: 1
+  replica:
+    replicaCount: 2
+  namespace: 25844
+  masterauth: password
+  requirepass: password
+  image:
+    name: redis:6.2.3-alpine
+    pullPolicy: IfNotPresent
