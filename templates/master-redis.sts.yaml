@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: master-redis
-  namespace: "{{ .Values.redis.namespace }}"
+  namespace: "{{ .Values.namespace }}"
 spec:
   serviceName: master-redis
   replicas: {{ .Values.redis.master.replicaCount}}
@@ -16,9 +16,14 @@ spec:
         app: redis
         type: master
     spec:
+      {{- with .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       initContainers:
       - name: config
-        image: {{ .Values.redis.image.name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
         command: [ "sh", "-c" ]
         args:
           - |
@@ -30,7 +35,8 @@ spec:
           mountPath: /tmp/redis/
       containers:
       - name: redis
-        image: {{ .Values.redis.image.name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
         command: ["redis-server"]
         args: ["/etc/redis/redis.conf"]
         ports:
@@ -50,5 +56,3 @@ spec:
       - name: config
         configMap:
           name: redis-config
-      
-      

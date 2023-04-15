@@ -4,10 +4,10 @@ metadata:
   name: replica-redis
   namespace: "{{ .Values.redis.namespace }}"
 spec:
-  clusterIP: None
+  type: {{ .Values.service.type }}
   ports:
-  - port: 6379
-    targetPort: 6379
+  - port: "{{ .Values.service.port }}"
+    targetPort: "{{ .Values.service.targetPort }}"
     name: redis
   selector:
     app: redis
